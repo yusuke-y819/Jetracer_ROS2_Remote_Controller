@@ -24,6 +24,7 @@ class VelocityNode : public rclcpp::Node
 			jetracer_order.set_vel = msg->set_vel;
 			jetracer_order.str_angle = msg->str_angle;
 			jetracer_order.str_offset = msg->str_offset;
+		// fprintf(stderr, "%f", jetracer_order.set_vel);
 		publisher_->publish(jetracer_order);
 	}
 };

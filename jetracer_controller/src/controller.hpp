@@ -61,7 +61,7 @@ extern int openJoystick(void);
   @retval 2 : read 失敗
   @retval 0 : 成功
 */
-extern int readJoystick(int *p_time, int *hundle, int pedal[], char cross[], char button[]);
+extern int readJoystick(int *p_time, int *handle, int pedal[], char cross[], char button[]);
 
 /*!
   @brief : コントローラからデータを読み込む関数 (現在の入力状況を返す)
@@ -75,7 +75,7 @@ extern int readNowJoystick(int stick[], char button[]);
   @brief : ボタン入力用データのイニシャライズ
   @attention : いらないと思う
 */
-extern void initializeButton(int *hundle, int pedal[], char cross[], char button[]);
+extern void initializeButton(int *handle, int pedal[], char cross[], char button[]);
 
 /*!
   @brief : コントローラとの通信を終了する関数

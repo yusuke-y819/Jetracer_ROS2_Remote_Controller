@@ -6,7 +6,7 @@ def generate_launch_description():
     # 起動したいノードを記述
     Node(
       package='jetracer_controller',
-      executable='logicool'
+      executable='logicool_handle'
     ),
     Node(
       package='jetracer_controller',

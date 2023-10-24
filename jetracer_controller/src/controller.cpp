@@ -37,7 +37,7 @@ extern int openJoystick(void)
 /*!
   @brief : コントローラからのデータを読み込む関数
   @param : *p_time タイムスタンプ
-  @param : hundle ハンドルからの入力データ (8bit)
+  @param : handle ハンドルからの入力データ (8bit)
   @param : pedal ペダルからの入力データ
   @param : cross 十字キーからの入力データ
   @param : button ボタンからの入力データ
@@ -45,7 +45,7 @@ extern int openJoystick(void)
   @retval 1 : read 失敗
   @retval 0 : 成功
 */
-extern int readJoystick(int *p_time, int *hundle, int pedal[], char cross[], char button[])
+extern int readJoystick(int *p_time, int *handle, int pedal[], char cross[], char button[])
 {
 	// コントローラからの入力データ
 	struct js_event_data js;
@@ -67,7 +67,7 @@ extern int readJoystick(int *p_time, int *hundle, int pedal[], char cross[], cha
 
 				// ハンドル入力 1013 で割る理由は入力データを 8 bit にするため
 			case 0:
-				*hundle = js.value;
+				*handle = js.value;
 				break;
                 // ペダル入力　(クラッチ、アクセル、ブレーキ)
 			case 1:
@@ -109,7 +109,7 @@ extern int readJoystick(int *p_time, int *hundle, int pedal[], char cross[], cha
 
 	// ボタンによる入力
 	if (js.type == 1) {
-		for (i = 0; i < 24; ++i) {
+		for (i = 0; i < 25; ++i) {
 			if (js.number == i) {
 				button[i] = js.value;
 			}
@@ -165,18 +165,18 @@ extern int readNowJoystick(int stick[], char button[])
 
   @attention : いらない
 */
-void initializeButton(int *hundle, int pedal[], char cross[], char button[])
+void initializeButton(int *handle, int pedal[], char cross[], char button[])
 {
 	int i = 0;
 	fprintf(stderr, "initial Start");
-    *hundle = 0;
+    *handle = 0;
 	for (i = 0; i < 4; i++) {
 		pedal[i] = 0;
 	}
 	for (i = 0; i < 4; i++) {
 		cross[i] = 0;
 	}
-	for (i = 0; i < 24; i++) {
+	for (i = 0; i < 25; i++) {
 		button[i] = 0;
 	}
 }
