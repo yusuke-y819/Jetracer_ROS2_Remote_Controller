@@ -1,10 +1,3 @@
-/*!
-  @file
-  @brief : publish command from zerotech controller
-  @brief : publish navigation order based on zerotech command
-  @author : Tetsuo TOMIZAWA, Kiyoshi MATSUO Masataka Hirai, Naoki AKAI
-*/
-
 // #include <ros/ros.h>
 #include "rclcpp/rclcpp.hpp"
 #include <stdio.h>
@@ -14,6 +7,8 @@
 #include <math.h>
 #include <pthread.h>
 #include "control_msgs/msg/jetracer_order.hpp"
+#include "geometry_msgs/msg/accel.hpp"
+#include "std_msgs/msg/bool.hpp"
 
 #include "controller.hpp"
 
@@ -39,7 +34,9 @@ class LogicoolHandleNode : public rclcpp::Node
 	public:
 	LogicoolHandleNode() : Node("jetracer_controller_logciool"), count_(0)
 	{
-		publisher_ = this->create_publisher<control_msgs::msg::JetracerOrder>("/jetracer_order_logi", 10);
+		publisher_ = this->create_publisher<control_msgs::msg::JetracerOrder>("/jetracer_order_logi", 0.1);
+		jet_pub_A = this->create_publisher<geometry_msgs::msg::Accel>("/vehicle/ctrl", 0.1);
+		jet_pub_B = this->create_publisher<std_msgs::msg::Bool>("/vehicle/enable", 0.1);
 		timer_ = this->create_wall_timer(5ms, std::bind(&LogicoolHandleNode::timer_callback, this));
 		int k = 0;
         handle = g_handle;
@@ -55,6 +52,8 @@ class LogicoolHandleNode : public rclcpp::Node
 	}
 	private:
 	rclcpp::Publisher<control_msgs::msg::JetracerOrder>::SharedPtr publisher_;
+	rclcpp::Publisher<geometry_msgs::msg::Accel>::SharedPtr jet_pub_A;
+	rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr jet_pub_B;
 	rclcpp::TimerBase::SharedPtr timer_;
 	size_t count_;
 
@@ -84,6 +83,8 @@ class LogicoolHandleNode : public rclcpp::Node
 			button[k] = g_button[k];
 		}
 		control_msgs::msg::JetracerOrder jetracer_order_logi;
+		geometry_msgs::msg::Accel accel;
+		std_msgs::msg::Bool mode;
 		//ここからLogicoolから車両への命令処理
 		if (button[3] == 1) {
 			fprintf(stderr, "change manual mode\n");
@@ -94,39 +95,54 @@ class LogicoolHandleNode : public rclcpp::Node
 			manual_mode = 0;
 		}
 		jetracer_order_logi.enable = 0;
+		mode.data = 0;
 		
 		if (manual_mode == 1) {
 			fprintf(stderr, "Manual_mode %6d %5d %5d %5d    ",handle,pedal[0],pedal[1],pedal[2]);
 			/*ジョイスティックからの操作をセニアカーの指令に*/
 			// 入力範囲（-32<pedal[2]<32）  出力範囲(-1.0<set_vel<1.0)
 			if (pedal[1] != 0 && pedal[3] != 0) {
-				jetracer_order_logi.set_vel = 0.0;
-			} else if (button[17] == 1) {	// 後進用
+				// jetracer_order_logi.set_vel = 0.0;
+				// accel.linear.x = 0.0;
+			}
+			if (button[17] == 1) {	// 後進用
 				current_vel =  -(-current_vel * 0.99 + ((double)pedal[1] / 65534.0) * 0.01 - ((double)pedal[2] / 70000.0) * 0.01) / 1.5;
 				if (current_vel > 0) current_vel = -0;
 				jetracer_order_logi.set_vel = current_vel;
+				accel.linear.x = current_vel;
 			} else {						// 前進用
 				current_vel =  current_vel * 0.99 + ((double)pedal[1] / 65534.0) * 0.01 - ((double)pedal[2] / 70000.0) * 0.01;
 				if (current_vel < 0) current_vel = 0;
 				jetracer_order_logi.set_vel = current_vel;
+				accel.linear.x = current_vel;
 			}
 			// 入力範囲（-32<control.handle<32）  出力範囲(-pi/3<str_angle<pi/3) 		 
-			jetracer_order_logi.str_angle = (double)(g_handle)*(M_PI/3.0) / 32767.0 + input_offset;    
+			jetracer_order_logi.str_angle = (double)(g_handle)*(M_PI/3.0) / 32767.0 + input_offset;   
+			accel.angular.x = (double)(g_handle)*(M_PI/3.0) / 32767.0 + input_offset;
 			// ステアリングオフセット指令		
 			input_offset -= cross[0]*M_PI/360.0;
 			if (input_offset >= M_PI/36.0) {input_offset=M_PI/36.0;}
 			if (input_offset <= -M_PI/36.0) {input_offset=-M_PI/36.0;}
 			jetracer_order_logi.str_offset = input_offset; 
+			accel.angular.z = -0.086;
 		    if (button[9] == 1) {input_offset=0;}
 		    jetracer_order_logi.enable = 1;
+			mode.data = 1;
 		} else {
 			fprintf(stderr, "Auto_mode    ");
 		    jetracer_order_logi.enable = 0;
 			jetracer_order_logi.set_vel =  0.0;
 			jetracer_order_logi.str_angle = 0.0;
+			mode.data = 0;
+			accel.linear.x = 0.0;
+			accel.angular.x = 0.0;
 		}
 		fprintf(stderr, "str: %lf   vel: %lf\n", jetracer_order_logi.str_angle, jetracer_order_logi.set_vel);
 		publisher_->publish(jetracer_order_logi);
+
+		fprintf(stderr, "str: %lf   vel: %lf\n", accel.angular.x + accel.angular.z, accel.linear.x);
+		jet_pub_A->publish(accel);
+		jet_pub_B->publish(mode);
 	}
 };
 

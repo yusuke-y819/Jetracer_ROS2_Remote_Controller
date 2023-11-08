@@ -1,11 +1,3 @@
-/*!
-  @file
-  @brief : USB ジョイスティック用のライブラリ
-  全キーに対応 バージョン
-
-  @author : Kiyoshi MATSUO
-*/
-
 #include <fcntl.h>
 #include <stdio.h>
 #include <sys/termios.h>
@@ -75,6 +67,7 @@ extern int readJoystick(int *p_time, int *handle, int pedal[], char cross[], cha
 				break;
 			case 2:
 				pedal[1] = -js.value + 32767;
+				// pedal[1] = js.value + 32767;
 				break;
 			case 3:
 				pedal[2] = -js.value + 32767;
